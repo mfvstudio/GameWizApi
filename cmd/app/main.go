@@ -12,5 +12,5 @@ func main() {
 	app := api.NewApp(&api.AppConfig{
 		Port: ":8080",
 	})
-	log.Fatal(app.Run())
+	log.Fatal(app.Run(app.Mount()))
 }

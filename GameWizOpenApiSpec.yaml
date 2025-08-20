@@ -1,0 +1,62 @@
+openapi: 3.0.4
+info:
+  title: GameWizApi
+  description: |-
+    This is an OpenApi 3.0 specification for Game Wiz api. A server used for asynchronous games. GWA is a small, solo,
+    project by mfv.
+  
+  contact:
+    email: mfvdev@icloud.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+  - url: localhost:8080/v1
+tags:
+  - name: health
+    description: endpoint for checking health of api
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: Useable for devs only, pings server for health check.
+      description: Server health status
+      operationId: health
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+        '400':
+          description: Invalid Request
+        '403':
+          description: Forbidden
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    HealthCheck:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
