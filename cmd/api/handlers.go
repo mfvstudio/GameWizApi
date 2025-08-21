@@ -16,3 +16,7 @@ func (Application) Health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
 }
+
+func (Application) CreateAccount(w http.ResponseWriter, r *http.Request) {
+
+}

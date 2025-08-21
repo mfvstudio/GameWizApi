@@ -8,7 +8,23 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// ApiResponse defines model for ApiResponse.
+type ApiResponse struct {
+	Code    *int32  `json:"code,omitempty"`
+	Message *string `json:"message,omitempty"`
+	Type    *string `json:"type,omitempty"`
+}
+
+// CreateAccount defines model for CreateAccount.
+type CreateAccount struct {
+	Birthdate int64               `json:"birthdate"`
+	Email     openapi_types.Email `json:"email"`
+	Password  string              `json:"password"`
+	Username  string              `json:"username"`
+}
 
 // Error defines model for Error.
 type Error struct {
@@ -21,11 +37,17 @@ type HealthCheck struct {
 	Message string `json:"message"`
 }
 
+// CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
+type CreateAccountJSONRequestBody = CreateAccount
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Useable for devs only, pings server for health check.
 	// (GET /health)
 	Health(w http.ResponseWriter, r *http.Request)
+	// Create a new user
+	// (POST /user)
+	CreateAccount(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -35,6 +57,12 @@ type Unimplemented struct{}
 // Useable for devs only, pings server for health check.
 // (GET /health)
 func (_ Unimplemented) Health(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a new user
+// (POST /user)
+func (_ Unimplemented) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -52,6 +80,20 @@ func (siw *ServerInterfaceWrapper) Health(w http.ResponseWriter, r *http.Request
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Health(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAccount operation middleware
+func (siw *ServerInterfaceWrapper) CreateAccount(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAccount(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -176,6 +218,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.Health)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/user", wrapper.CreateAccount)
 	})
 
 	return r

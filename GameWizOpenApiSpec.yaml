@@ -16,6 +16,8 @@ servers:
 tags:
   - name: health
     description: endpoint for checking health of api
+  - name: user
+    description: Operations for users
 paths:
   /health:
     get:
@@ -41,6 +43,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /user:
+    post:
+      tags:
+        - user
+      summary: Create a new user
+      description: Endpoint for registering new user
+      operationId: createAccount
+      requestBody:
+        description: Create new user account
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccount'
+        required: true
+      responses:
+        '201':
+          description: Create Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Invalid Request
+        '403':
+          description: Forbidden
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
 components:
   schemas:
     HealthCheck:
@@ -50,6 +84,45 @@ components:
       properties:
         message:
           type: string
+    CreateAccount:
+      type: object
+      required:
+        - username
+        - password
+        - email
+        - birthdate
+      properties:
+        username:
+          type: string
+          example: letmesolohim
+        password:
+          type: string
+          pattern: "^[a-z][A-Z][0-9]+$" #TODO, check regex
+          example: 'somePa$$w0rd_'
+          format: password
+        email:
+          type: string
+          pattern: "^[a-z][A-Z][0-9]@[a-z].com$"
+          example: 'someEmail@provider.com'
+          format: email
+        birthdate:
+          type: integer
+          format: int64
+          example: 6584613516
+      xml:
+        name: playercreate
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+      xml:
+        name: '##default'
     Error:
       type: object
       required:
@@ -60,3 +133,13 @@ components:
           type: string
         message:
           type: string
+  requestBodies:
+    CreateAccount:
+      description: User object to add to user store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateAccount'
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/CreateAccount'

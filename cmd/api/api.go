@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mfvstudio/gamewizapi/cmd/gen"
+	"github.com/mfvstudio/gamewizapi/internal/data"
 )
 
 type Application struct {
@@ -14,6 +15,7 @@ type Application struct {
 
 type AppConfig struct {
 	Port string
+	Auth data.AuthStore
 }
 
 func NewApp(config *AppConfig) Application {
