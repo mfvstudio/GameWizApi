@@ -16,6 +16,7 @@ type Application struct {
 type AppConfig struct {
 	Port string
 	Auth data.AuthStore
+	Data data.DataStore
 }
 
 func NewApp(config *AppConfig) Application {
@@ -30,7 +31,10 @@ func (Application) Mount() *chi.Mux {
 }
 
 func (app *Application) Run(mux *chi.Mux) error {
-	h := gen.HandlerFromMuxWithBaseURL(app, mux, "/v0") //TODO: read api version from somewhere
+	h := gen.HandlerWithOptions(app, gen.ChiServerOptions{
+		BaseURL:     "/v0", //TODO: read api version from somewhere
+		Middlewares: []gen.MiddlewareFunc{app.AuthenticateToken, SetBasicHeaders},
+	})
 	port := app.Config.Port
 	server := &http.Server{
 		Addr:    port,

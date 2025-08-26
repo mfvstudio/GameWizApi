@@ -8,7 +8,16 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
+)
+
+// Defines values for Status.
+const (
+	CREATED    Status = "CREATED"
+	FINISHED   Status = "FINISHED"
+	INPROGRESS Status = "IN_PROGRESS"
+	TERMINATED Status = "TERMINATED"
 )
 
 // ApiResponse defines model for ApiResponse.
@@ -37,6 +46,19 @@ type HealthCheck struct {
 	Message string `json:"message"`
 }
 
+// Session defines model for Session.
+type Session struct {
+	GameId         *string                 `json:"gameId,omitempty"`
+	MaxPlayerCount *int32                  `json:"maxPlayerCount,omitempty"`
+	MetaData       *map[string]interface{} `json:"metaData,omitempty"`
+	Players        *[]string               `json:"players,omitempty"`
+	Status         *Status                 `json:"status,omitempty"`
+	UpNext         *string                 `json:"upNext,omitempty"`
+}
+
+// Status defines model for Status.
+type Status string
+
 // CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
 type CreateAccountJSONRequestBody = CreateAccount
 
@@ -45,6 +67,9 @@ type ServerInterface interface {
 	// Useable for devs only, pings server for health check.
 	// (GET /health)
 	Health(w http.ResponseWriter, r *http.Request)
+	// get session data
+	// (GET /session/{gameId})
+	GetSession(w http.ResponseWriter, r *http.Request, gameId string)
 	// Create a new user
 	// (POST /user)
 	CreateAccount(w http.ResponseWriter, r *http.Request)
@@ -57,6 +82,12 @@ type Unimplemented struct{}
 // Useable for devs only, pings server for health check.
 // (GET /health)
 func (_ Unimplemented) Health(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// get session data
+// (GET /session/{gameId})
+func (_ Unimplemented) GetSession(w http.ResponseWriter, r *http.Request, gameId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -80,6 +111,31 @@ func (siw *ServerInterfaceWrapper) Health(w http.ResponseWriter, r *http.Request
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Health(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSession operation middleware
+func (siw *ServerInterfaceWrapper) GetSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "gameId" -------------
+	var gameId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "gameId", chi.URLParam(r, "gameId"), &gameId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "gameId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSession(w, r, gameId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -218,6 +274,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.Health)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/session/{gameId}", wrapper.GetSession)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/user", wrapper.CreateAccount)

@@ -18,6 +18,8 @@ tags:
     description: endpoint for checking health of api
   - name: user
     description: Operations for users
+  - name: session
+    description: operations for game sessions
 paths:
   /health:
     get:
@@ -74,6 +76,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /session/{gameId}:
+    get:
+      parameters:
+        - in: path
+          name: gameId
+          schema:
+            type: string
+          required: true
+      tags:
+        - session
+      summary: get session data
+      description: endpoint for getting next player move, game state
+      operationId: getSession
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          description: Invalid Request
+        '403':
+          description: Forbidden
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     
 components:
   schemas:
@@ -84,6 +116,29 @@ components:
       properties:
         message:
           type: string
+    Session:
+      type: object
+      required:
+      properties:
+        gameId:
+          type: string
+          example: "someUID"
+        maxPlayerCount:
+          type: integer
+          format: int32
+        players:
+          type: array
+          items:
+            type: string
+          example: ["player69"]
+        upNext:
+          type: string
+          example: "player69"
+        metaData:
+          type: object
+          additionalProperties: {}
+        status:
+          $ref: '#/components/schemas/Status'
     CreateAccount:
       type: object
       required:
@@ -133,6 +188,13 @@ components:
           type: string
         message:
           type: string
+    Status:
+      type: string
+      enum:
+        - CREATED
+        - IN_PROGRESS
+        - TERMINATED
+        - FINISHED
   requestBodies:
     CreateAccount:
       description: User object to add to user store

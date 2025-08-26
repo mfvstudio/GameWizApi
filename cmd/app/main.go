@@ -13,6 +13,7 @@ func main() {
 	app := api.NewApp(&api.AppConfig{
 		Port: ":8080",
 		Auth: &data.FireAuthStore{},
+		Data: &data.FireDataStore{},
 	})
 	log.Fatal(app.Run(app.Mount()))
 }
