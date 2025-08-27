@@ -12,7 +12,7 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   version: 1.0.0
 servers:
-  - url: localhost:8080/v1
+  - url: http://localhost:8080/v0
 tags:
   - name: health
     description: endpoint for checking health of api
@@ -106,7 +106,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    
+  /session:
+    post:
+      tags:
+        - session
+      summary: Create game session
+      description: operation for new session
+      operationId: CreateSession
+      requestBody:
+        description: Create new game session
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSession'
+        required: true
+      responses:
+        '201':
+          description: Create Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Invalid Request
+        '403':
+          description: Forbidden
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     HealthCheck:
@@ -116,16 +146,52 @@ components:
       properties:
         message:
           type: string
-    Session:
+    CreateSession:
       type: object
       required:
+        - gameId
+        - maxPlayerCount
+        - minPlayerCount
+        - hostUID
+        - upNext
       properties:
         gameId:
           type: string
-          example: "someUID"
         maxPlayerCount:
           type: integer
           format: int32
+        minPlayerCount:
+          type: integer
+          format: int32
+        hostUID:
+          type: string
+        upNext:
+          type: string
+        metaData:
+          type: object
+          additionalProperties: {}
+    Session:
+      type: object
+      required:
+        - sessionId
+        - gameId
+        - maxPlayerCount
+        - minPlayerCount
+        - players
+        - upNext
+        - status
+        - gameState
+      properties:
+        sessionId:
+          type: string
+          example: "apseion64565dsaf"
+        gameId:
+          type: string
+          example: "TicTacToe"
+        maxPlayerCount:
+          type: integer
+        minPlayerCount:
+          type: integer
         players:
           type: array
           items:
@@ -135,6 +201,9 @@ components:
           type: string
           example: "player69"
         metaData:
+          type: object
+          additionalProperties: {}
+        gameState:
           type: object
           additionalProperties: {}
         status:
@@ -152,12 +221,12 @@ components:
           example: letmesolohim
         password:
           type: string
-          pattern: "^[a-z][A-Z][0-9]+$" #TODO, check regex
+          pattern: "^[A-Za-z\\d@$!%*?&_+]{8,}$" #TODO, check regex
           example: 'somePa$$w0rd_'
           format: password
         email:
           type: string
-          pattern: "^[a-z][A-Z][0-9]@[a-z].com$"
+          pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+[a-z]{3}$"
           example: 'someEmail@provider.com'
           format: email
         birthdate:
@@ -191,7 +260,7 @@ components:
     Status:
       type: string
       enum:
-        - CREATED
+        - WAITING_FOR_PLAYERS
         - IN_PROGRESS
         - TERMINATED
         - FINISHED
@@ -205,3 +274,12 @@ components:
         application/xml:
           schema:
             $ref: '#/components/schemas/CreateAccount'
+    CreateSession:
+      description: Request to create new game session
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateSession'
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/CreateSession'

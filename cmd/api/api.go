@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/getkin/kin-openapi/routers"
 	"github.com/go-chi/chi/v5"
 	"github.com/mfvstudio/gamewizapi/cmd/gen"
 	"github.com/mfvstudio/gamewizapi/internal/data"
@@ -14,9 +15,10 @@ type Application struct {
 }
 
 type AppConfig struct {
-	Port string
-	Auth data.AuthStore
-	Data data.DataStore
+	Port             string
+	Auth             data.AuthStore
+	Data             data.DataStore
+	RequestValidator routers.Router
 }
 
 func NewApp(config *AppConfig) Application {
@@ -33,7 +35,7 @@ func (Application) Mount() *chi.Mux {
 func (app *Application) Run(mux *chi.Mux) error {
 	h := gen.HandlerWithOptions(app, gen.ChiServerOptions{
 		BaseURL:     "/v0", //TODO: read api version from somewhere
-		Middlewares: []gen.MiddlewareFunc{app.AuthenticateToken, SetBasicHeaders},
+		Middlewares: []gen.MiddlewareFunc{app.AuthenticateToken, app.ValidateRequest, SetBasicHeaders},
 	})
 	port := app.Config.Port
 	server := &http.Server{

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"firebase.google.com/go/v4/auth"
+	"github.com/getkin/kin-openapi/openapi3filter"
 )
 
 type AuthToken struct {
@@ -20,6 +21,30 @@ type Context struct {
 func SetBasicHeaders(handler http.Handler) http.Handler {
 	return http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-type", "application/json")
+		handler.ServeHTTP(w, r)
+	}))
+}
+
+func (app *Application) ValidateRequest(handler http.Handler) http.Handler {
+	return http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Validating request")
+		route, pathParams, err := app.Config.RequestValidator.FindRoute(r)
+		if err != nil {
+			http.Error(w, "Route not found: "+err.Error(), http.StatusNotFound)
+			return
+		}
+		input := &openapi3filter.RequestValidationInput{
+			Request:    r,
+			PathParams: pathParams,
+			Route:      route,
+			Options: &openapi3filter.Options{
+				AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
+			},
+		}
+		if err = openapi3filter.ValidateRequest(r.Context(), input); err != nil {
+			http.Error(w, "Request Validation Failed: "+err.Error(), http.StatusBadRequest)
+			return
+		}
 		handler.ServeHTTP(w, r)
 	}))
 }

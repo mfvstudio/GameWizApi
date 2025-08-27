@@ -20,5 +20,5 @@ func IsUser(r *http.Request) bool {
 
 func IsPlayerInSession(s *gen.Session, r *http.Request) bool {
 	claims := r.Context().Value("userToken").(*AuthToken)
-	return slices.Contains(*s.Players, claims.UID)
+	return slices.Contains(s.Players, claims.UID)
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/mfvstudio/gamewizapi/cmd/gen"
+	"github.com/mfvstudio/gamewizapi/internal/helpers"
 )
 
 func (app *Application) Health(w http.ResponseWriter, r *http.Request) {
@@ -47,4 +48,24 @@ func (app *Application) GetSession(w http.ResponseWriter, r *http.Request, gameI
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(res)
+}
+
+func (app *Application) CreateSession(w http.ResponseWriter, r *http.Request) {
+	var request gen.CreateSession
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	session, err := helpers.CreateSessionFromSessionRequest(&request)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = app.Config.Data.PutGameSession(session)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 }

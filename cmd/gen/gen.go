@@ -14,10 +14,10 @@ import (
 
 // Defines values for Status.
 const (
-	CREATED    Status = "CREATED"
-	FINISHED   Status = "FINISHED"
-	INPROGRESS Status = "IN_PROGRESS"
-	TERMINATED Status = "TERMINATED"
+	FINISHED          Status = "FINISHED"
+	INPROGRESS        Status = "IN_PROGRESS"
+	TERMINATED        Status = "TERMINATED"
+	WAITINGFORPLAYERS Status = "WAITING_FOR_PLAYERS"
 )
 
 // ApiResponse defines model for ApiResponse.
@@ -35,6 +35,16 @@ type CreateAccount struct {
 	Username  string              `json:"username"`
 }
 
+// CreateSession defines model for CreateSession.
+type CreateSession struct {
+	GameId         string                  `json:"gameId"`
+	HostUID        string                  `json:"hostUID"`
+	MaxPlayerCount int32                   `json:"maxPlayerCount"`
+	MetaData       *map[string]interface{} `json:"metaData,omitempty"`
+	MinPlayerCount int32                   `json:"minPlayerCount"`
+	UpNext         string                  `json:"upNext"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Code    string `json:"code"`
@@ -48,16 +58,22 @@ type HealthCheck struct {
 
 // Session defines model for Session.
 type Session struct {
-	GameId         *string                 `json:"gameId,omitempty"`
-	MaxPlayerCount *int32                  `json:"maxPlayerCount,omitempty"`
+	GameId         string                  `json:"gameId"`
+	GameState      map[string]interface{}  `json:"gameState"`
+	MaxPlayerCount int                     `json:"maxPlayerCount"`
 	MetaData       *map[string]interface{} `json:"metaData,omitempty"`
-	Players        *[]string               `json:"players,omitempty"`
-	Status         *Status                 `json:"status,omitempty"`
-	UpNext         *string                 `json:"upNext,omitempty"`
+	MinPlayerCount int                     `json:"minPlayerCount"`
+	Players        []string                `json:"players"`
+	SessionId      string                  `json:"sessionId"`
+	Status         Status                  `json:"status"`
+	UpNext         string                  `json:"upNext"`
 }
 
 // Status defines model for Status.
 type Status string
+
+// CreateSessionJSONRequestBody defines body for CreateSession for application/json ContentType.
+type CreateSessionJSONRequestBody = CreateSession
 
 // CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
 type CreateAccountJSONRequestBody = CreateAccount
@@ -67,6 +83,9 @@ type ServerInterface interface {
 	// Useable for devs only, pings server for health check.
 	// (GET /health)
 	Health(w http.ResponseWriter, r *http.Request)
+	// Create game session
+	// (POST /session)
+	CreateSession(w http.ResponseWriter, r *http.Request)
 	// get session data
 	// (GET /session/{gameId})
 	GetSession(w http.ResponseWriter, r *http.Request, gameId string)
@@ -82,6 +101,12 @@ type Unimplemented struct{}
 // Useable for devs only, pings server for health check.
 // (GET /health)
 func (_ Unimplemented) Health(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create game session
+// (POST /session)
+func (_ Unimplemented) CreateSession(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -111,6 +136,20 @@ func (siw *ServerInterfaceWrapper) Health(w http.ResponseWriter, r *http.Request
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Health(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSession operation middleware
+func (siw *ServerInterfaceWrapper) CreateSession(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSession(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -274,6 +313,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.Health)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/session", wrapper.CreateSession)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/session/{gameId}", wrapper.GetSession)

@@ -48,3 +48,13 @@ func (fs *FireDataStore) GetGameSession(r *http.Request, gameId string) (*gen.Se
 	doc.DataTo(&res)
 	return &res, nil
 }
+
+func (fs *FireDataStore) PutGameSession(s *gen.Session) error {
+	result, err := fs.client().Collection("sessions").Doc(s.SessionId).Set(context.Background(), s)
+	if err != nil {
+		log.Printf("Error while inserting new session to data store: %v", err)
+		return err
+	}
+	log.Printf("New session creation success: %v", result)
+	return nil
+}

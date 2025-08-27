@@ -14,4 +14,5 @@ type AuthStore interface {
 
 type DataStore interface {
 	GetGameSession(r *http.Request, gameId string) (*gen.Session, error)
+	PutGameSession(s *gen.Session) error
 }
