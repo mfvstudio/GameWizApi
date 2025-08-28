@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"crypto/rand"
 	"log"
 
 	"github.com/google/uuid"
@@ -34,4 +35,10 @@ func generateUUID() (*string, error) {
 	}
 	str := id.String()
 	return &str, nil
+}
+
+func GenerateSessionInviteCode() string {
+	codeLength := 6
+	code := rand.Text()
+	return code[0:codeLength]
 }

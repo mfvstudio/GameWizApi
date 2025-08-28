@@ -56,6 +56,12 @@ type HealthCheck struct {
 	Message string `json:"message"`
 }
 
+// JoinSession defines model for JoinSession.
+type JoinSession struct {
+	InviteCode string `json:"inviteCode"`
+	PlayerUID  string `json:"playerUID"`
+}
+
 // Session defines model for Session.
 type Session struct {
 	GameId         string                  `json:"gameId"`
@@ -75,6 +81,9 @@ type Status string
 // CreateSessionJSONRequestBody defines body for CreateSession for application/json ContentType.
 type CreateSessionJSONRequestBody = CreateSession
 
+// JoinSessionJSONRequestBody defines body for JoinSession for application/json ContentType.
+type JoinSessionJSONRequestBody = JoinSession
+
 // CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
 type CreateAccountJSONRequestBody = CreateAccount
 
@@ -86,6 +95,9 @@ type ServerInterface interface {
 	// Create game session
 	// (POST /session)
 	CreateSession(w http.ResponseWriter, r *http.Request)
+	// join session
+	// (POST /session/join)
+	JoinSession(w http.ResponseWriter, r *http.Request)
 	// get session data
 	// (GET /session/{gameId})
 	GetSession(w http.ResponseWriter, r *http.Request, gameId string)
@@ -107,6 +119,12 @@ func (_ Unimplemented) Health(w http.ResponseWriter, r *http.Request) {
 // Create game session
 // (POST /session)
 func (_ Unimplemented) CreateSession(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// join session
+// (POST /session/join)
+func (_ Unimplemented) JoinSession(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -150,6 +168,20 @@ func (siw *ServerInterfaceWrapper) CreateSession(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateSession(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// JoinSession operation middleware
+func (siw *ServerInterfaceWrapper) JoinSession(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.JoinSession(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -316,6 +348,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/session", wrapper.CreateSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/session/join", wrapper.JoinSession)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/session/{gameId}", wrapper.GetSession)

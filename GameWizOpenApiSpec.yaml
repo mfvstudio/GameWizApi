@@ -106,6 +106,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /session/join:
+     post:
+      tags:
+        - session
+      summary: join session
+      description: join an existing session as an invitee
+      operationId: joinSession
+      requestBody:
+        description: Join a session with a sessionId
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinSession'
+        required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          description: Invalid Request
+        '403':
+          description: Forbidden
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /session:
     post:
       tags:
@@ -145,6 +177,17 @@ components:
         - message
       properties:
         message:
+          type: string
+    JoinSession:
+      type: object
+      required:
+        - inviteCode
+        - playerUID
+      properties:
+        inviteCode:
+          type: string
+          pattern: "^[A-Z]{6}$"
+        playerUID:
           type: string
     CreateSession:
       type: object
@@ -274,6 +317,15 @@ components:
         application/xml:
           schema:
             $ref: '#/components/schemas/CreateAccount'
+    JoinSession:
+      description: Request to join an existing game session
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JoinSession'
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/JoinSession'
     CreateSession:
       description: Request to create new game session
       content:

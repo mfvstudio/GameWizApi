@@ -69,3 +69,19 @@ func (app *Application) CreateSession(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 }
+
+func (app *Application) JoinSession(w http.ResponseWriter, r *http.Request) {
+	var s gen.JoinSession
+	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	//TODO: handle all possible errors
+	session, err := app.Config.Data.JoinSession(&s)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(session)
+}
