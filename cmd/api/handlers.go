@@ -7,6 +7,7 @@ import (
 
 	"github.com/mfvstudio/gamewizapi/cmd/gen"
 	"github.com/mfvstudio/gamewizapi/internal/helpers"
+	"github.com/mfvstudio/gamewizapi/internal/wizErrors"
 )
 
 func (app *Application) Health(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +38,7 @@ func (app *Application) CreateAccount(w http.ResponseWriter, r *http.Request) {
 
 func (app *Application) GetSession(w http.ResponseWriter, r *http.Request, gameId string) {
 	//Check if caller has correct permissions
-	res, err := app.Config.Data.GetGameSession(r, gameId)
+	res, err := app.Config.Data.GetGameSession(gameId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -62,12 +63,14 @@ func (app *Application) CreateSession(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = app.Config.Data.PutGameSession(session)
+	inviteResp, err := app.Config.Data.PutGameSession(session)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(&inviteResp)
 }
 
 func (app *Application) JoinSession(w http.ResponseWriter, r *http.Request) {
@@ -76,12 +79,36 @@ func (app *Application) JoinSession(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	//TODO: handle all possible errors
 	session, err := app.Config.Data.JoinSession(&s)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		switch err {
+		case wizErrors.ResourceNotFound:
+			log.Printf("Invite or Session id not found: %v", err)
+			w.WriteHeader(http.StatusNotFound)
+		case wizErrors.MaxCapacityReached:
+			w.WriteHeader(http.StatusNotAcceptable)
+		case wizErrors.UserAlreadyInSession:
+			w.WriteHeader(http.StatusNotAcceptable)
+		default:
+			log.Printf("Server error while joining session: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(session)
+}
+
+func (app *Application) UpdateSession(w http.ResponseWriter, r *http.Request, gameId string) {
+	var s gen.UpdateSession
+	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := app.Config.Data.UpdateSession(&s, gameId); err != nil {
+		log.Printf("Error while updating a session: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

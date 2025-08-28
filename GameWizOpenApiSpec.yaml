@@ -106,6 +106,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    post:
+      parameters:
+        - in: path
+          name: gameId
+          schema:
+            type: string
+          required: true
+      tags:
+        - session
+      summary: Update an existing session
+      description: Update game state, metadata
+      operationId: updateSession
+      requestBody:
+        description: Provide updated game state and any updated metadata
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSession'
+        required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Invalid Request
+        '403':
+          description: Forbidden
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      
   /session/join:
      post:
       tags:
@@ -158,7 +195,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/InviteCodeResponse'
         '400':
           description: Invalid Request
         '403':
@@ -178,6 +215,25 @@ components:
       properties:
         message:
           type: string
+    InviteCodeResponse:
+      type: object
+      required:
+        - inviteCode
+      properties:
+        inviteCode:
+          type: string
+          pattern: "^[A-Z0-9]{6}$"
+    UpdateSession:
+      type: object
+      required:
+        - gameState
+      properties:
+        metaData:
+          type: object
+          additionalProperties: {}
+        gameState:
+          type: object
+          additionalProperties: {}
     JoinSession:
       type: object
       required:
@@ -186,7 +242,7 @@ components:
       properties:
         inviteCode:
           type: string
-          pattern: "^[A-Z]{6}$"
+          pattern: "^[A-Z0-9]{6}$"
         playerUID:
           type: string
     CreateSession:

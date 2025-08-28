@@ -13,7 +13,8 @@ type AuthStore interface {
 }
 
 type DataStore interface {
-	GetGameSession(r *http.Request, gameId string) (*gen.Session, error)
-	PutGameSession(s *gen.Session) error
+	GetGameSession(gameId string) (*gen.Session, error)
+	PutGameSession(s *gen.Session) (*gen.InviteCodeResponse, error)
 	JoinSession(s *gen.JoinSession) (*gen.Session, error)
+	UpdateSession(s *gen.UpdateSession, gameId string) error
 }

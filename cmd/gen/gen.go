@@ -56,6 +56,11 @@ type HealthCheck struct {
 	Message string `json:"message"`
 }
 
+// InviteCodeResponse defines model for InviteCodeResponse.
+type InviteCodeResponse struct {
+	InviteCode string `json:"inviteCode"`
+}
+
 // JoinSession defines model for JoinSession.
 type JoinSession struct {
 	InviteCode string `json:"inviteCode"`
@@ -78,11 +83,20 @@ type Session struct {
 // Status defines model for Status.
 type Status string
 
+// UpdateSession defines model for UpdateSession.
+type UpdateSession struct {
+	GameState map[string]interface{}  `json:"gameState"`
+	MetaData  *map[string]interface{} `json:"metaData,omitempty"`
+}
+
 // CreateSessionJSONRequestBody defines body for CreateSession for application/json ContentType.
 type CreateSessionJSONRequestBody = CreateSession
 
 // JoinSessionJSONRequestBody defines body for JoinSession for application/json ContentType.
 type JoinSessionJSONRequestBody = JoinSession
+
+// UpdateSessionJSONRequestBody defines body for UpdateSession for application/json ContentType.
+type UpdateSessionJSONRequestBody = UpdateSession
 
 // CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
 type CreateAccountJSONRequestBody = CreateAccount
@@ -101,6 +115,9 @@ type ServerInterface interface {
 	// get session data
 	// (GET /session/{gameId})
 	GetSession(w http.ResponseWriter, r *http.Request, gameId string)
+	// Update an existing session
+	// (POST /session/{gameId})
+	UpdateSession(w http.ResponseWriter, r *http.Request, gameId string)
 	// Create a new user
 	// (POST /user)
 	CreateAccount(w http.ResponseWriter, r *http.Request)
@@ -131,6 +148,12 @@ func (_ Unimplemented) JoinSession(w http.ResponseWriter, r *http.Request) {
 // get session data
 // (GET /session/{gameId})
 func (_ Unimplemented) GetSession(w http.ResponseWriter, r *http.Request, gameId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update an existing session
+// (POST /session/{gameId})
+func (_ Unimplemented) UpdateSession(w http.ResponseWriter, r *http.Request, gameId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -207,6 +230,31 @@ func (siw *ServerInterfaceWrapper) GetSession(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetSession(w, r, gameId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSession operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "gameId" -------------
+	var gameId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "gameId", chi.URLParam(r, "gameId"), &gameId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "gameId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSession(w, r, gameId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -354,6 +402,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/session/{gameId}", wrapper.GetSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/session/{gameId}", wrapper.UpdateSession)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/user", wrapper.CreateAccount)
