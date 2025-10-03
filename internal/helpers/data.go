@@ -3,6 +3,7 @@ package helpers
 import (
 	"crypto/rand"
 	"log"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/mfvstudio/gamewizapi/cmd/gen"
@@ -41,4 +42,8 @@ func GenerateSessionInviteCode() string {
 	codeLength := 6
 	code := rand.Text()
 	return code[0:codeLength]
+}
+
+func IsPlayerInSession(s *gen.Session, playerUID string) bool {
+	return slices.Contains(s.Players, playerUID)
 }

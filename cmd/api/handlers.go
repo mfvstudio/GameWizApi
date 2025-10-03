@@ -105,6 +105,15 @@ func (app *Application) UpdateSession(w http.ResponseWriter, r *http.Request, ga
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	session, err := app.Config.Data.GetGameSession(gameId)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if !helpers.IsPlayerInSession(session, r.Context().Value("userToken").(*AuthToken).UID) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 	if err := app.Config.Data.UpdateSession(&s, gameId); err != nil {
 		log.Printf("Error while updating a session: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
