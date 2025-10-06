@@ -1,8 +1,21 @@
+substitutions:
+  _AR_REPO: gamewiz-artifact-registry
+  _APP_NAME: game-wiz-api
+
 steps:
-  - id: TST
-    name: alpine
-    entrypoint: echo
+  - id: 'Build Image'
+    name: 'gcr.io/cloud-builders/docker'
     args:
-      - 'hello World'
+      [
+        'build', '-t', '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_APP_NAME}:latest', '.'
+      ]
+  - id: 'Push Image'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push', '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_APP_NAME}:latest'
+      ]
+images:
+  - '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_APP_NAME}:latest'
 options:
   logging: CLOUD_LOGGING_ONLY
