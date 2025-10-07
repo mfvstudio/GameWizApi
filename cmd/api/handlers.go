@@ -11,10 +11,7 @@ import (
 )
 
 func (app *Application) Health(w http.ResponseWriter, r *http.Request) {
-	if !IsAdmin(r) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
+	log.Printf("Called Health")
 	resp := gen.HealthCheck{
 		Message: "Genki Desu!",
 	}
