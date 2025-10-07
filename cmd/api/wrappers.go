@@ -25,6 +25,13 @@ func SetBasicHeaders(handler http.Handler) http.Handler {
 	}))
 }
 
+func DebugRequest(handler http.Handler) http.Handler {
+	return http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Request is: %v", r)
+		handler.ServeHTTP(w, r)
+	}))
+}
+
 func (app *Application) ValidateRequest(handler http.Handler) http.Handler {
 	return http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Validating request")

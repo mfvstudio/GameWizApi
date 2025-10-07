@@ -35,7 +35,7 @@ func (Application) Mount() *chi.Mux {
 func (app *Application) Run(mux *chi.Mux) error {
 	h := gen.HandlerWithOptions(app, gen.ChiServerOptions{
 		BaseURL:     "/v0", //TODO: read api version from somewhere
-		Middlewares: []gen.MiddlewareFunc{app.AuthenticateToken, app.ValidateRequest, SetBasicHeaders},
+		Middlewares: []gen.MiddlewareFunc{SetBasicHeaders, DebugRequest},
 	})
 	port := app.Config.Port
 	server := &http.Server{
